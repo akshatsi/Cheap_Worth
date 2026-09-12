@@ -1,0 +1,6 @@
+{
+  "id": "fibonacci",
+  "difficulty": "medium",
+  "spec": "Write a function `fibonacci(n)` that returns the nth Fibonacci number (0-indexed, fibonacci(0) == 0, fibonacci(1) == 1), computed iteratively rather than with naive recursion.",
+  "tests": "def test_fibonacci_base_cases():\n    assert fibonacci(0) == 0\n    assert fibonacci(1) == 1\n\n\ndef test_fibonacci_sequence():\n    assert fibonacci(2) == 1\n    assert fibonacci(6) == 8\n    assert fibonacci(10) == 55\n"
+}

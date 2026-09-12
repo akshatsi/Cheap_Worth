@@ -1,0 +1,6 @@
+{
+  "id": "valid_parentheses",
+  "difficulty": "medium",
+  "spec": "Write a function `is_valid_parentheses(s)` that returns True if every opening bracket in the string (of types (), [], {}) has a matching closing bracket in the correct order, and False otherwise.",
+  "tests": "def test_valid_simple():\n    assert is_valid_parentheses('()') is True\n    assert is_valid_parentheses('()[]{}') is True\n\n\ndef test_valid_nested():\n    assert is_valid_parentheses('{[()]}') is True\n\n\ndef test_invalid_mismatched():\n    assert is_valid_parentheses('(]') is False\n    assert is_valid_parentheses('([)]') is False\n\n\ndef test_invalid_unclosed():\n    assert is_valid_parentheses('(') is False\n"
+}

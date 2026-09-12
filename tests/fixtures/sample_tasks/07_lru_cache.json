@@ -1,0 +1,6 @@
+{
+  "id": "lru_cache",
+  "difficulty": "hard",
+  "spec": "Write a class `LRUCache(capacity)` with `get(key)` and `put(key, value)` methods. `get` returns the value for `key`, or -1 if not present, and marks the key as recently used. `put` inserts or updates a key's value; if the cache is over capacity after the insert, evict the least recently used key. Both operations must run in O(1) time.",
+  "tests": "def test_basic_get_put():\n    cache = LRUCache(2)\n    cache.put(1, 'a')\n    cache.put(2, 'b')\n    assert cache.get(1) == 'a'\n\n\ndef test_eviction_of_least_recently_used():\n    cache = LRUCache(2)\n    cache.put(1, 'a')\n    cache.put(2, 'b')\n    cache.get(1)  # 1 is now most recently used\n    cache.put(3, 'c')  # should evict 2, not 1\n    assert cache.get(2) == -1\n    assert cache.get(1) == 'a'\n    assert cache.get(3) == 'c'\n\n\ndef test_missing_key():\n    cache = LRUCache(1)\n    assert cache.get(99) == -1\n"
+}

@@ -1,0 +1,6 @@
+{
+  "id": "is_palindrome",
+  "difficulty": "easy",
+  "spec": "Write a function `is_palindrome(s)` that returns True if the string reads the same forwards and backwards, case-insensitive, ignoring spaces.",
+  "tests": "def test_palindrome_simple():\n    assert is_palindrome('level') is True\n\n\ndef test_palindrome_with_spaces_and_case():\n    assert is_palindrome('A man a plan a canal Panama') is True\n\n\ndef test_not_palindrome():\n    assert is_palindrome('hello') is False\n"
+}

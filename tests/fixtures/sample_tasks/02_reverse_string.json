@@ -1,0 +1,6 @@
+{
+  "id": "reverse_string",
+  "difficulty": "easy",
+  "spec": "Write a function `reverse_string(s)` that returns the input string reversed.",
+  "tests": "def test_reverse_basic():\n    assert reverse_string('abc') == 'cba'\n\n\ndef test_reverse_empty():\n    assert reverse_string('') == ''\n\n\ndef test_reverse_palindrome():\n    assert reverse_string('level') == 'level'\n"
+}
