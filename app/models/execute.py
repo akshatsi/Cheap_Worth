@@ -57,4 +57,10 @@ def execute(tier: Tier, spec: str) -> ExecuteResult:
         input_tokens=response.usage.input_tokens,
         output_tokens=response.usage.output_tokens,
     )
-    return ExecuteResult(code_output=code_output, cost_usd=cost_usd, latency_ms=latency_ms)
+    return ExecuteResult(
+        code_output=code_output,
+        cost_usd=cost_usd,
+        latency_ms=latency_ms,
+        input_tokens=response.usage.input_tokens,
+        output_tokens=response.usage.output_tokens,
+    )

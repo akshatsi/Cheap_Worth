@@ -72,6 +72,8 @@ def build_cascade_graph(
             validation_detail=outcome.detail,
             cost_usd=pending.cost_usd,
             latency_ms=pending.latency_ms,
+            input_tokens=pending.input_tokens,
+            output_tokens=pending.output_tokens,
         )
         return {"attempts": state["attempts"] + [attempt]}
 

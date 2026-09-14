@@ -29,6 +29,8 @@ class ExecuteResult:
     code_output: str
     cost_usd: float
     latency_ms: float
+    input_tokens: int = 0
+    output_tokens: int = 0
 
 
 @dataclass
@@ -47,6 +49,8 @@ class Attempt:
     validation_detail: dict[str, Any]
     cost_usd: float
     latency_ms: float
+    input_tokens: int = 0
+    output_tokens: int = 0
 
 
 class ClassifyFn(Protocol):
