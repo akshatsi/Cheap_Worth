@@ -50,5 +50,5 @@ def get_task(task_id: int, client: httpx.Client | None = None) -> dict:
     return _request("GET", f"/tasks/{task_id}", client=client)
 
 
-def get_cost_summary(client: httpx.Client | None = None) -> dict:
-    return _request("GET", "/cost-summary", client=client)
+def get_efficiency_summary(client: httpx.Client | None = None) -> dict:
+    return _request("GET", "/efficiency-summary", client=client)

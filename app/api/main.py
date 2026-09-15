@@ -43,7 +43,7 @@ def _load_task_detail(conn, task_id: int) -> TaskDetail:
         task=task,
         executions=repository.list_executions_for_task(conn, task_id),
         classifier_predictions=repository.list_classifier_predictions_for_task(conn, task_id),
-        cost_ledger=repository.get_cost_ledger_entry(conn, task_id),
+        efficiency=repository.get_efficiency_ledger_entry(conn, task_id),
     )
 
 
@@ -79,6 +79,6 @@ def list_tasks(conn=Depends(get_db_connection)) -> list[Task]:
     return repository.list_tasks(conn)
 
 
-@app.get("/cost-summary")
-def cost_summary(conn=Depends(get_db_connection)) -> dict:
-    return repository.cost_summary(conn)
+@app.get("/efficiency-summary")
+def efficiency_summary(conn=Depends(get_db_connection)) -> dict:
+    return repository.efficiency_summary(conn)

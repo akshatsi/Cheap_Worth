@@ -4,6 +4,7 @@ never the real data/cost_autopilot.db.
 
 import pytest
 
+from app.models.timing import estimate_baseline_time_ms
 from app.orchestration.state import Attempt, ClassifyResult
 from app.schemas.models import Phase, PredictedTier, TaskStatus, Tier
 from app.storage import repository
@@ -19,14 +20,13 @@ def conn(tmp_path):
     connection.close()
 
 
-def make_attempt(tier, passed, cost_usd=0.001, input_tokens=100, output_tokens=50):
+def make_attempt(tier, passed, latency_ms=12.0, input_tokens=100, output_tokens=50):
     return Attempt(
         tier=tier,
         code_output=f"code-for-{tier.value}",
         passed=passed,
         validation_detail={"returncode": 0 if passed else 1},
-        cost_usd=cost_usd,
-        latency_ms=12.0,
+        latency_ms=latency_ms,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
     )
@@ -81,7 +81,7 @@ def test_escalation_chain_wires_escalated_from(conn):
     assert executions[1].escalated_from_execution_id == first_id
 
 
-def test_persist_cascade_run_writes_all_tables_and_computes_savings(conn):
+def test_persist_cascade_run_writes_all_tables_and_computes_time_saved(conn):
     prediction = ClassifyResult(
         predicted_tier=PredictedTier.COMPLEX,
         raw_response={"text": "complex"},
@@ -89,8 +89,8 @@ def test_persist_cascade_run_writes_all_tables_and_computes_savings(conn):
         cost_usd=0.0001,
     )
     attempts = [
-        make_attempt(Tier.SONNET, passed=False, cost_usd=0.01, input_tokens=200, output_tokens=100),
-        make_attempt(Tier.OPUS, passed=True, cost_usd=0.05, input_tokens=200, output_tokens=100),
+        make_attempt(Tier.SONNET, passed=False, latency_ms=100.0, input_tokens=200, output_tokens=100),
+        make_attempt(Tier.OPUS, passed=True, latency_ms=250.0, input_tokens=200, output_tokens=100),
     ]
     result = make_cascade_result(Phase.ROUTED, attempts, prediction)
 
@@ -108,14 +108,17 @@ def test_persist_cascade_run_writes_all_tables_and_computes_savings(conn):
     assert len(predictions) == 1
     assert predictions[0].predicted_tier == PredictedTier.COMPLEX
 
-    ledger = repository.get_cost_ledger_entry(conn, task_id)
+    ledger = repository.get_efficiency_ledger_entry(conn, task_id)
     assert ledger is not None
-    assert ledger.total_cost_usd == pytest.approx(0.0001 + 0.01 + 0.05)
-    assert ledger.savings_usd == pytest.approx(ledger.baseline_cost_usd - ledger.total_cost_usd)
+    # total_time_ms includes the classifier's latency plus every attempt's.
+    assert ledger.total_time_ms == pytest.approx(5.0 + 100.0 + 250.0)
+    # baseline uses the LAST attempt's output tokens, priced at Opus's rate.
+    assert ledger.baseline_time_ms == pytest.approx(estimate_baseline_time_ms(100))
+    assert ledger.time_saved_ms == pytest.approx(ledger.baseline_time_ms - ledger.total_time_ms)
 
 
 def test_persist_cascade_run_without_classifier_prediction(conn):
-    attempts = [make_attempt(Tier.HAIKU, passed=True, cost_usd=0.002)]
+    attempts = [make_attempt(Tier.HAIKU, passed=True, latency_ms=42.0)]
     result = make_cascade_result(Phase.BOOTSTRAP, attempts, classifier_prediction=None)
 
     task_id = repository.persist_cascade_run(conn, "spec", "tests", Phase.BOOTSTRAP, result)
@@ -123,21 +126,21 @@ def test_persist_cascade_run_without_classifier_prediction(conn):
     predictions = repository.list_classifier_predictions_for_task(conn, task_id)
     assert predictions == []
 
-    ledger = repository.get_cost_ledger_entry(conn, task_id)
-    assert ledger.total_cost_usd == pytest.approx(0.002)
+    ledger = repository.get_efficiency_ledger_entry(conn, task_id)
+    assert ledger.total_time_ms == pytest.approx(42.0)
 
 
-def test_cost_summary_aggregates_across_tasks(conn):
+def test_efficiency_summary_aggregates_across_tasks(conn):
     for _ in range(2):
         attempts = [
-            make_attempt(Tier.HAIKU, passed=True, cost_usd=0.002, input_tokens=50, output_tokens=20)
+            make_attempt(Tier.HAIKU, passed=True, latency_ms=20.0, input_tokens=50, output_tokens=20)
         ]
         result = make_cascade_result(Phase.BOOTSTRAP, attempts)
         repository.persist_cascade_run(conn, "s", "t", Phase.BOOTSTRAP, result)
 
-    summary = repository.cost_summary(conn)
+    summary = repository.efficiency_summary(conn)
     assert summary["task_count"] == 2
-    assert summary["total_cost_usd"] == pytest.approx(0.004)
-    assert summary["savings_usd"] == pytest.approx(
-        summary["baseline_cost_usd"] - summary["total_cost_usd"]
+    assert summary["total_time_ms"] == pytest.approx(40.0)
+    assert summary["time_saved_ms"] == pytest.approx(
+        summary["baseline_time_ms"] - summary["total_time_ms"]
     )

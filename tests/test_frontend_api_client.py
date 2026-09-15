@@ -8,7 +8,7 @@ import json
 import httpx
 import pytest
 
-from frontend.api_client import get_cost_summary, get_task, list_tasks, submit_task
+from frontend.api_client import get_efficiency_summary, get_task, list_tasks, submit_task
 
 
 def _client_with(handler) -> httpx.Client:
@@ -28,7 +28,7 @@ def test_submit_task_posts_spec_and_tests_and_returns_detail():
                 "task": {"id": 1, "spec": "s", "tests": "t", "status": "done", "created_at": "now"},
                 "executions": [],
                 "classifier_predictions": [],
-                "cost_ledger": None,
+                "efficiency": None,
             },
         )
 
@@ -60,14 +60,15 @@ def test_get_task_hits_the_right_path():
     assert result["task"]["id"] == 42
 
 
-def test_get_cost_summary_returns_parsed_json():
+def test_get_efficiency_summary_returns_parsed_json():
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/cost-summary"
+        assert request.url.path == "/efficiency-summary"
         return httpx.Response(
-            200, json={"task_count": 3, "total_cost_usd": 0.0, "baseline_cost_usd": 0.0, "savings_usd": 0.0}
+            200,
+            json={"task_count": 3, "total_time_ms": 0.0, "baseline_time_ms": 0.0, "time_saved_ms": 0.0},
         )
 
-    result = get_cost_summary(client=_client_with(handler))
+    result = get_efficiency_summary(client=_client_with(handler))
     assert result["task_count"] == 3
 
 

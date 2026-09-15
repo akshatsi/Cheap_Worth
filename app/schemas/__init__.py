@@ -1,6 +1,6 @@
 from app.schemas.models import (
     ClassifierPrediction,
-    CostLedgerEntry,
+    EfficiencyLedgerEntry,
     Execution,
     Phase,
     PredictedTier,
@@ -12,7 +12,7 @@ from app.schemas.models import (
 
 __all__ = [
     "ClassifierPrediction",
-    "CostLedgerEntry",
+    "EfficiencyLedgerEntry",
     "Execution",
     "Phase",
     "PredictedTier",

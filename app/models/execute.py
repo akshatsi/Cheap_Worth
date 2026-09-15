@@ -2,11 +2,13 @@
 a locally running Ollama server, and returns generated code plus token
 counts and latency.
 
-No API key needed — Ollama runs on this machine. Cost is $0 by design
-(see app/models/pricing.py): the three tiers are now different local
-model sizes standing in for Haiku/Sonnet/Opus, not three paid API tiers.
-Only touches the network inside execute() itself — importing this module
-never requires Ollama to be running.
+No API key needed — Ollama runs on this machine, with no metered cost.
+The three tiers are different local model sizes standing in for
+Haiku/Sonnet/Opus, not three paid API tiers, so latency and token counts
+are the real signal here, not a dollar figure (see app/models/timing.py
+for how they turn into an efficiency estimate). Only touches the network
+inside execute() itself — importing this module never requires Ollama to
+be running.
 """
 
 from __future__ import annotations
@@ -21,7 +23,6 @@ from app.config import (
     OLLAMA_OPUS_MODEL,
     OLLAMA_SONNET_MODEL,
 )
-from app.models.pricing import estimate_cost_usd
 from app.orchestration.state import ExecuteResult
 from app.schemas.models import Tier
 
@@ -76,11 +77,9 @@ def execute(tier: Tier, spec: str) -> ExecuteResult:
     code_output = _strip_markdown_fences(data["message"]["content"])
     input_tokens = data.get("prompt_eval_count", 0)
     output_tokens = data.get("eval_count", 0)
-    cost_usd = estimate_cost_usd(tier, input_tokens=input_tokens, output_tokens=output_tokens)
 
     return ExecuteResult(
         code_output=code_output,
-        cost_usd=cost_usd,
         latency_ms=latency_ms,
         input_tokens=input_tokens,
         output_tokens=output_tokens,

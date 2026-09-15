@@ -1,4 +1,8 @@
-"""SQLite connection and table definitions for the four tables in architecture.md."""
+"""SQLite connection and table definitions for the four tables in architecture.md.
+
+No migration handling — this is pre-production. If an old data/*.db file
+has a leftover cost_ledger table from before the $-to-time reframe, delete
+it; a fresh efficiency_ledger table gets created alongside it otherwise."""
 
 from __future__ import annotations
 
@@ -33,18 +37,17 @@ CREATE TABLE IF NOT EXISTS executions (
     code_output TEXT NOT NULL,
     passed INTEGER NOT NULL,
     validation_detail TEXT NOT NULL,
-    cost_usd REAL NOT NULL,
     latency_ms REAL NOT NULL,
     escalated_from_execution_id INTEGER REFERENCES executions(id),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS cost_ledger (
+CREATE TABLE IF NOT EXISTS efficiency_ledger (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL REFERENCES tasks(id),
-    total_cost_usd REAL NOT NULL,
-    baseline_cost_usd REAL NOT NULL,
-    savings_usd REAL NOT NULL
+    total_time_ms REAL NOT NULL,
+    baseline_time_ms REAL NOT NULL,
+    time_saved_ms REAL NOT NULL
 );
 """
 

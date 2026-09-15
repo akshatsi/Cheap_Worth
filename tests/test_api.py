@@ -45,7 +45,6 @@ def client(tmp_path):
     def fake_execute(tier, spec):
         return ExecuteResult(
             code_output=CORRECT_ADD_CODE,
-            cost_usd=0.001,
             latency_ms=10.0,
             input_tokens=50,
             output_tokens=20,
@@ -78,8 +77,8 @@ def test_create_task_runs_cascade_and_returns_full_detail(client):
     assert body["task"]["status"] == "done"
     assert len(body["executions"]) == 1
     assert body["executions"][0]["tier"] == Tier.HAIKU.value
-    assert body["cost_ledger"] is not None
-    assert body["cost_ledger"]["total_cost_usd"] == pytest.approx(0.001)
+    assert body["efficiency"] is not None
+    assert body["efficiency"]["total_time_ms"] == pytest.approx(10.0)
 
 
 def test_get_task_returns_the_same_detail(client):
@@ -113,24 +112,23 @@ def test_list_tasks_returns_history_in_order(client):
     assert body[0]["id"] < body[1]["id"]
 
 
-def test_cost_summary_aggregates_across_tasks(client):
+def test_efficiency_summary_aggregates_across_tasks(client):
     task_data = _fixture_task()
     client.post("/tasks", json={"spec": task_data["spec"], "tests": task_data["tests"]})
     client.post("/tasks", json={"spec": task_data["spec"], "tests": task_data["tests"]})
 
-    response = client.get("/cost-summary")
+    response = client.get("/efficiency-summary")
 
     assert response.status_code == 200
     body = response.json()
     assert body["task_count"] == 2
-    assert body["total_cost_usd"] == pytest.approx(0.002)
+    assert body["total_time_ms"] == pytest.approx(20.0)
 
 
 def test_create_task_with_failing_code_escalates_and_reports_failure(client):
     def fake_execute_always_wrong(tier, spec):
         return ExecuteResult(
             code_output=WRONG_ADD_CODE,
-            cost_usd=0.001,
             latency_ms=10.0,
             input_tokens=50,
             output_tokens=20,

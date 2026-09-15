@@ -37,11 +37,12 @@ No Anthropic key needed. The routed tiers run on a local Ollama server, so all t
 - `tasks`
 - `classifier_predictions`
 - `executions`
-- `cost_ledger`
+- `efficiency_ledger`
 
 ## Config that must exist before v1 runs
 
-- Per-tier pricing table (input/output cost per token) — the routed tiers are $0 by design now that they're local; only the Groq classifier carries a real per-token cost
+- Groq per-token pricing table (`app/models/pricing.py`) — the classifier's real, metered $ cost
+- Ollama per-tier ms-per-output-token table (`app/models/timing.py`) — the routed tiers' currency now that they're local and free; a placeholder estimate, same as any pricing table, refine as real data accumulates
 - Subprocess timeout and memory limit for validation runs
 - Bootstrap-to-routed cutover rule (how many logged tasks before the classifier takes over the first guess)
 
@@ -52,4 +53,4 @@ No Anthropic key needed. The routed tiers run on a local Ollama server, so all t
 - No existing codebase, no multi-turn sessions
 - Tests are required with every task — no test suite, no run
 - Validation runs in a local subprocess, not a container
-- Cost/savings numbers for the routed tiers read $0 while running locally — a real signal, not a bug, until a paid tier is back in the mix
+- The routed tiers' efficiency numbers are wall-clock time (ms), not dollars — see PRD.md's "What this actually optimizes." The Groq classifier keeps a real, separate $ cost.

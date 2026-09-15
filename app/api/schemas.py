@@ -11,11 +11,11 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from app.schemas.models import ClassifierPrediction, CostLedgerEntry, Execution, Task
+from app.schemas.models import ClassifierPrediction, EfficiencyLedgerEntry, Execution, Task
 
 
 class TaskDetail(BaseModel):
     task: Task
     executions: list[Execution]
     classifier_predictions: list[ClassifierPrediction]
-    cost_ledger: Optional[CostLedgerEntry]
+    efficiency: Optional[EfficiencyLedgerEntry]

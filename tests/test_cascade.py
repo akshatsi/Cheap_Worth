@@ -15,7 +15,7 @@ def make_execute_fn(code_by_tier=None, default_code="stub-code"):
     def execute_fn(tier, spec):
         calls.append(tier)
         code = (code_by_tier or {}).get(tier, default_code)
-        return ExecuteResult(code_output=code, cost_usd=0.001, latency_ms=10.0)
+        return ExecuteResult(code_output=code, latency_ms=10.0)
 
     execute_fn.calls = calls
     return execute_fn

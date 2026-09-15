@@ -29,7 +29,6 @@ def _log_bootstrap_task(conn, tiers_and_pass):
             code_output="code",
             passed=passed,
             validation_detail={},
-            cost_usd=0.0,
             latency_ms=1.0,
             input_tokens=10,
             output_tokens=5,
@@ -87,7 +86,7 @@ def test_not_ready_if_every_example_is_the_same_class(conn):
 
 def test_ignores_tasks_that_already_went_through_the_classifier(conn):
     routed_attempt = Attempt(
-        tier=Tier.HAIKU, code_output="c", passed=True, validation_detail={}, cost_usd=0.0, latency_ms=1.0
+        tier=Tier.HAIKU, code_output="c", passed=True, validation_detail={}, latency_ms=1.0
     )
     routed_result = {
         "spec": "s",

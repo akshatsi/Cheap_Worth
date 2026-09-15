@@ -1,8 +1,15 @@
-"""Shared data models for tasks, classifier predictions, executions, and cost tracking.
+"""Shared data models for tasks, classifier predictions, executions, and
+efficiency tracking.
 
 These are the contract every later piece of the system — the orchestration
 graph, the storage layer, the API — writes against. See architecture.md for
 the data model these mirror.
+
+The routed tiers (Haiku/Sonnet/Opus) run on a local Ollama server with no
+metered cost, so there's no dollar figure to track for them — see
+EfficiencyLedgerEntry below, which tracks wall-clock time instead. The
+Groq classifier is still a real, metered API call, so ClassifierPrediction
+keeps a genuine cost_usd.
 """
 
 from __future__ import annotations
@@ -75,15 +82,18 @@ class Execution(BaseModel):
     code_output: str
     passed: bool
     validation_detail: dict[str, Any]
-    cost_usd: float
     latency_ms: float
     escalated_from_execution_id: Optional[int] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class CostLedgerEntry(BaseModel):
+class EfficiencyLedgerEntry(BaseModel):
+    """What a task actually cost in wall-clock time, vs. an estimate of
+    what it would have cost going straight to Opus. See app/models/timing.py
+    for how that estimate is derived, and its caveats."""
+
     id: Optional[int] = None
     task_id: int
-    total_cost_usd: float
-    baseline_cost_usd: float
-    savings_usd: float
+    total_time_ms: float
+    baseline_time_ms: float
+    time_saved_ms: float

@@ -204,7 +204,7 @@ def test_sample_task_runs_end_to_end_and_lands_correctly_in_storage(client, fixt
         # that). A correct solution regardless of tier means every task
         # here resolves on Haiku's first attempt, in bootstrap phase.
         return ExecuteResult(
-            code_output=solution, cost_usd=0.0, latency_ms=1.0, input_tokens=10, output_tokens=10
+            code_output=solution, latency_ms=1.0, input_tokens=10, output_tokens=10
         )
 
     app.dependency_overrides[get_execute_fn] = lambda: execute_fn
@@ -217,8 +217,8 @@ def test_sample_task_runs_end_to_end_and_lands_correctly_in_storage(client, fixt
     assert len(body["executions"]) == 1
     assert body["executions"][0]["tier"] == "haiku"
     assert body["executions"][0]["passed"] is True
-    assert body["cost_ledger"] is not None
-    assert body["cost_ledger"]["total_cost_usd"] == pytest.approx(0.0)
+    assert body["efficiency"] is not None
+    assert body["efficiency"]["total_time_ms"] == pytest.approx(1.0)
 
     task_id = body["task"]["id"]
 
@@ -231,14 +231,14 @@ def test_sample_task_runs_end_to_end_and_lands_correctly_in_storage(client, fixt
     assert any(t["id"] == task_id for t in history_response.json())
 
 
-def test_cost_summary_reflects_every_task_after_a_full_batch(client):
+def test_efficiency_summary_reflects_every_task_after_a_full_batch(client):
     """Definition of done, per IMPLEMENTATION_PLAN.md Step 6: the numbers
     the dashboard reports have to match what storage actually holds."""
 
     def make_execute_fn(solution):
         def execute_fn(tier, spec):
             return ExecuteResult(
-                code_output=solution, cost_usd=0.0, latency_ms=1.0, input_tokens=10, output_tokens=10
+                code_output=solution, latency_ms=1.0, input_tokens=10, output_tokens=10
             )
 
         return execute_fn
@@ -250,9 +250,9 @@ def test_cost_summary_reflects_every_task_after_a_full_batch(client):
         response = client.post("/tasks", json={"spec": fixture["spec"], "tests": fixture["tests"]})
         assert response.status_code == 200, response.text
 
-    summary = client.get("/cost-summary").json()
+    summary = client.get("/efficiency-summary").json()
     history = client.get("/tasks").json()
 
     assert summary["task_count"] == len(FIXTURES) == len(history)
     assert all(t["status"] == "done" for t in history)
-    assert summary["total_cost_usd"] == pytest.approx(0.0)
+    assert summary["total_time_ms"] == pytest.approx(1.0 * len(FIXTURES))

@@ -70,7 +70,6 @@ def build_cascade_graph(
             code_output=pending.code_output,
             passed=outcome.passed,
             validation_detail=outcome.detail,
-            cost_usd=pending.cost_usd,
             latency_ms=pending.latency_ms,
             input_tokens=pending.input_tokens,
             output_tokens=pending.output_tokens,

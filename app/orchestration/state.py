@@ -26,8 +26,11 @@ class ClassifyResult:
 
 @dataclass
 class ExecuteResult:
+    """The routed tiers run on a local Ollama server with no metered cost —
+    latency_ms and the token counts are the real signal now, not a dollar
+    figure (see app/models/timing.py)."""
+
     code_output: str
-    cost_usd: float
     latency_ms: float
     input_tokens: int = 0
     output_tokens: int = 0
@@ -47,7 +50,6 @@ class Attempt:
     code_output: str
     passed: bool
     validation_detail: dict[str, Any]
-    cost_usd: float
     latency_ms: float
     input_tokens: int = 0
     output_tokens: int = 0

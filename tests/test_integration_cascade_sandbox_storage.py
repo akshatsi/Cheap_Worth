@@ -35,7 +35,7 @@ def test_correct_solution_passes_on_first_attempt_and_persists(conn):
 
     def execute_fn(tier, spec):
         return ExecuteResult(
-            code_output=correct_code, cost_usd=0.001, latency_ms=10.0,
+            code_output=correct_code, latency_ms=10.0,
             input_tokens=50, output_tokens=20,
         )
 
@@ -69,8 +69,8 @@ def test_correct_solution_passes_on_first_attempt_and_persists(conn):
     assert executions[0].tier == Tier.HAIKU
     assert executions[0].passed is True
 
-    ledger = repository.get_cost_ledger_entry(conn, task_id)
-    assert ledger.total_cost_usd == pytest.approx(0.001)
+    ledger = repository.get_efficiency_ledger_entry(conn, task_id)
+    assert ledger.total_time_ms == pytest.approx(10.0)
 
 
 def test_wrong_then_right_solution_escalates_and_persists_the_chain(conn):
@@ -83,7 +83,7 @@ def test_wrong_then_right_solution_escalates_and_persists_the_chain(conn):
     def execute_fn(tier, spec):
         code = wrong_code if tier == Tier.HAIKU else right_code
         return ExecuteResult(
-            code_output=code, cost_usd=0.001, latency_ms=10.0,
+            code_output=code, latency_ms=10.0,
             input_tokens=50, output_tokens=20,
         )
 

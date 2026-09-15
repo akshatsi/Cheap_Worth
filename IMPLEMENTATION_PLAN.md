@@ -2,6 +2,8 @@
 
 Solo build. No tracks to parallelize — just a build order that avoids backtracking: each step below produces something the next step needs, so working out of order means redoing work.
 
+Steps 1–6 below are a build log and use the plan's original dollar-cost framing (`CostLedgerEntry`, `cost_ledger`, `/cost-summary`) — accurate at the time each step was built. After Step 6, the routed tiers moved fully to a local Ollama server, and the currency being tracked changed from dollars to wall-clock time: `CostLedgerEntry` → `EfficiencyLedgerEntry`, `cost_ledger` → `efficiency_ledger`, `/cost-summary` → `/efficiency-summary`. See PRD.md's "What this actually optimizes" for why. Code and docs outside this file reflect the current names; this file is left as a historical record rather than rewritten.
+
 ## Sequencing at a glance
 
 | Step | What | Rough length |

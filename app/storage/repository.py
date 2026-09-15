@@ -1,7 +1,7 @@
 """Insert/read functions for the four tables, plus persist_cascade_run —
 the one function that turns a finished cascade run into rows across all
 of them, wiring escalated_from_execution_id along the way and computing
-the cost_ledger comparison against an always-Opus baseline.
+the efficiency_ledger comparison against an always-Opus baseline.
 """
 
 from __future__ import annotations
@@ -10,11 +10,11 @@ import json
 import sqlite3
 from typing import Optional
 
-from app.models.pricing import baseline_cost_usd as compute_baseline_cost_usd
+from app.models.timing import estimate_baseline_time_ms
 from app.orchestration.state import Attempt, CascadeState, ClassifyResult
 from app.schemas.models import (
     ClassifierPrediction,
-    CostLedgerEntry,
+    EfficiencyLedgerEntry,
     Execution,
     Phase,
     PredictedTier,
@@ -119,16 +119,15 @@ def insert_execution(
 ) -> int:
     cursor = conn.execute(
         """INSERT INTO executions
-           (task_id, tier, code_output, passed, validation_detail, cost_usd,
+           (task_id, tier, code_output, passed, validation_detail,
             latency_ms, escalated_from_execution_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
         (
             task_id,
             attempt.tier.value,
             attempt.code_output,
             int(attempt.passed),
             json.dumps(attempt.validation_detail),
-            attempt.cost_usd,
             attempt.latency_ms,
             escalated_from_execution_id,
         ),
@@ -149,7 +148,6 @@ def list_executions_for_task(conn: sqlite3.Connection, task_id: int) -> list[Exe
             code_output=r["code_output"],
             passed=bool(r["passed"]),
             validation_detail=json.loads(r["validation_detail"]),
-            cost_usd=r["cost_usd"],
             latency_ms=r["latency_ms"],
             escalated_from_execution_id=r["escalated_from_execution_id"],
             created_at=r["created_at"],
@@ -158,51 +156,54 @@ def list_executions_for_task(conn: sqlite3.Connection, task_id: int) -> list[Exe
     ]
 
 
-# --- cost_ledger -----------------------------------------------------------
+# --- efficiency_ledger -----------------------------------------------------
 
 
-def insert_cost_ledger_entry(
-    conn: sqlite3.Connection, task_id: int, total_cost_usd: float, baseline_cost_usd: float
+def insert_efficiency_ledger_entry(
+    conn: sqlite3.Connection, task_id: int, total_time_ms: float, baseline_time_ms: float
 ) -> int:
-    savings_usd = baseline_cost_usd - total_cost_usd
+    time_saved_ms = baseline_time_ms - total_time_ms
     cursor = conn.execute(
-        """INSERT INTO cost_ledger (task_id, total_cost_usd, baseline_cost_usd, savings_usd)
+        """INSERT INTO efficiency_ledger (task_id, total_time_ms, baseline_time_ms, time_saved_ms)
            VALUES (?, ?, ?, ?)""",
-        (task_id, total_cost_usd, baseline_cost_usd, savings_usd),
+        (task_id, total_time_ms, baseline_time_ms, time_saved_ms),
     )
     conn.commit()
     return cursor.lastrowid
 
 
-def get_cost_ledger_entry(conn: sqlite3.Connection, task_id: int) -> Optional[CostLedgerEntry]:
+def get_efficiency_ledger_entry(
+    conn: sqlite3.Connection, task_id: int
+) -> Optional[EfficiencyLedgerEntry]:
     row = conn.execute(
-        "SELECT * FROM cost_ledger WHERE task_id = ?", (task_id,)
+        "SELECT * FROM efficiency_ledger WHERE task_id = ?", (task_id,)
     ).fetchone()
     if row is None:
         return None
-    return CostLedgerEntry(
+    return EfficiencyLedgerEntry(
         id=row["id"],
         task_id=row["task_id"],
-        total_cost_usd=row["total_cost_usd"],
-        baseline_cost_usd=row["baseline_cost_usd"],
-        savings_usd=row["savings_usd"],
+        total_time_ms=row["total_time_ms"],
+        baseline_time_ms=row["baseline_time_ms"],
+        time_saved_ms=row["time_saved_ms"],
     )
 
 
-def cost_summary(conn: sqlite3.Connection) -> dict:
-    """Aggregate spend vs. baseline across every task — the number the
-    frontend's cost dashboard and a future /cost-summary endpoint report."""
+def efficiency_summary(conn: sqlite3.Connection) -> dict:
+    """Aggregate time spent vs. baseline across every task — the number
+    the frontend's efficiency dashboard and the /efficiency-summary
+    endpoint report."""
     row = conn.execute(
-        """SELECT COALESCE(SUM(total_cost_usd), 0), COALESCE(SUM(baseline_cost_usd), 0),
-                  COALESCE(SUM(savings_usd), 0), COUNT(*)
-           FROM cost_ledger"""
+        """SELECT COALESCE(SUM(total_time_ms), 0), COALESCE(SUM(baseline_time_ms), 0),
+                  COALESCE(SUM(time_saved_ms), 0), COUNT(*)
+           FROM efficiency_ledger"""
     ).fetchone()
-    total, baseline, savings, count = row
+    total, baseline, saved, count = row
     return {
         "task_count": count,
-        "total_cost_usd": total,
-        "baseline_cost_usd": baseline,
-        "savings_usd": savings,
+        "total_time_ms": total,
+        "baseline_time_ms": baseline,
+        "time_saved_ms": saved,
     }
 
 
@@ -213,32 +214,32 @@ def persist_cascade_run(
     conn: sqlite3.Connection, spec: str, tests: str, phase: Phase, result: CascadeState
 ) -> int:
     """Turn one finished run of the cascade graph into rows across tasks,
-    classifier_predictions, executions, and cost_ledger. Returns the task id.
+    classifier_predictions, executions, and efficiency_ledger. Returns
+    the task id.
 
-    The baseline for cost_ledger uses the last attempt's token counts,
-    priced at Opus rates — a proxy for "what this task would have cost
-    straight to Opus," not a real Opus call. Token counts are roughly
-    stable across tiers for the same task (same input; output length
-    varies some by model), so this is a reasonable approximation given the
-    placeholder pricing already in play (see app/models/pricing.py).
+    total_time_ms is real, measured wall-clock time: every attempt's
+    latency, plus the classifier's latency if it ran. baseline_time_ms is
+    an estimate — the last attempt's output token count, priced at
+    Opus's estimated ms-per-token (see app/models/timing.py) — the same
+    approximation the old $-based baseline used, just in a different
+    unit: token counts are roughly stable across tiers for the same task.
     """
     task_id = insert_task(conn, spec, tests, result["status"])
 
+    total_time_ms = 0.0
     if result["classifier_prediction"] is not None:
         insert_classifier_prediction(conn, task_id, result["classifier_prediction"], phase)
+        total_time_ms += result["classifier_prediction"].latency_ms
 
     previous_execution_id: Optional[int] = None
     for attempt in result["attempts"]:
         previous_execution_id = insert_execution(
             conn, task_id, attempt, previous_execution_id
         )
-
-    total_cost_usd = sum(a.cost_usd for a in result["attempts"])
-    if result["classifier_prediction"] is not None:
-        total_cost_usd += result["classifier_prediction"].cost_usd
+        total_time_ms += attempt.latency_ms
 
     last_attempt = result["attempts"][-1]
-    baseline = compute_baseline_cost_usd(last_attempt.input_tokens, last_attempt.output_tokens)
-    insert_cost_ledger_entry(conn, task_id, total_cost_usd, baseline)
+    baseline_time_ms = estimate_baseline_time_ms(last_attempt.output_tokens)
+    insert_efficiency_ledger_entry(conn, task_id, total_time_ms, baseline_time_ms)
 
     return task_id

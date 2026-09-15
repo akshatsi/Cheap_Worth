@@ -1,9 +1,14 @@
-"""Streamlit frontend: submit a task, browse history, watch cost savings.
+"""Streamlit frontend: submit a task, browse history, watch time saved.
 
 Talks to the FastAPI backend over HTTP — run `uvicorn app.api.main:app`
 in a separate terminal first (and `ollama serve`, for the routed tiers to
 actually respond). Override the backend's address with API_BASE_URL if
 it's not on localhost:8000.
+
+Tracks time, not dollars: the routed tiers run on a local Ollama server
+with no metered cost, so there's nothing to save in dollar terms. What's
+real is wall-clock time — see PRD.md's success metric and
+app/models/timing.py for the estimate this compares against.
 """
 
 from __future__ import annotations
@@ -11,13 +16,19 @@ from __future__ import annotations
 import httpx
 import streamlit as st
 
-from frontend.api_client import get_cost_summary, get_task, list_tasks, submit_task
+from frontend.api_client import get_efficiency_summary, get_task, list_tasks, submit_task
+
+
+def format_ms(ms: float) -> str:
+    if ms >= 1000:
+        return f"{ms / 1000:.2f}s"
+    return f"{ms:.0f}ms"
 
 
 def render_task_detail(detail: dict) -> None:
-    """The tier trace for one task: what was tried, in what order, at
-    what cost — the routing transparency the whole project is built
-    around (see PRD.md)."""
+    """The tier trace for one task: what was tried, in what order, how
+    long each attempt took — the routing transparency the whole project
+    is built around (see PRD.md)."""
     task = detail["task"]
     st.caption(f"Status: **{task['status']}** · submitted {task['created_at']}")
     with st.expander("Spec", expanded=False):
@@ -28,7 +39,8 @@ def render_task_detail(detail: dict) -> None:
         prediction = predictions[0]
         st.write(
             f"Classifier predicted **{prediction['predicted_tier']}** "
-            f"(phase: {prediction['phase']}, cost ${prediction['cost_usd']:.6f})"
+            f"(phase: {prediction['phase']}, cost ${prediction['cost_usd']:.6f} — "
+            "the classifier is still a real, metered Groq call)"
         )
     else:
         st.write("Classifier bypassed — bootstrap phase, started straight at Haiku.")
@@ -36,26 +48,23 @@ def render_task_detail(detail: dict) -> None:
     st.write("**Tier trace:**")
     for execution in detail["executions"]:
         icon = "✅" if execution["passed"] else "❌"
-        st.markdown(
-            f"{icon} `{execution['tier']}` — ${execution['cost_usd']:.6f}, "
-            f"{execution['latency_ms']:.0f} ms"
-        )
+        st.markdown(f"{icon} `{execution['tier']}` — {format_ms(execution['latency_ms'])}")
         with st.expander(f"Code + validation detail ({execution['tier']})", expanded=False):
             st.code(execution["code_output"], language="python")
             st.json(execution["validation_detail"])
 
-    ledger = detail.get("cost_ledger")
-    if ledger:
+    efficiency = detail.get("efficiency")
+    if efficiency:
         cols = st.columns(3)
-        cols[0].metric("Total cost", f"${ledger['total_cost_usd']:.6f}")
-        cols[1].metric("Baseline (always Opus)", f"${ledger['baseline_cost_usd']:.6f}")
-        cols[2].metric("Savings", f"${ledger['savings_usd']:.6f}")
+        cols[0].metric("Total time", format_ms(efficiency["total_time_ms"]))
+        cols[1].metric("Baseline (always Opus, est.)", format_ms(efficiency["baseline_time_ms"]))
+        cols[2].metric("Time saved", format_ms(efficiency["time_saved_ms"]))
 
 
 st.set_page_config(page_title="LLM Cost Autopilot", layout="wide")
 st.title("LLM Cost Autopilot")
 
-tab_submit, tab_history, tab_cost = st.tabs(["Submit a task", "History", "Cost savings"])
+tab_submit, tab_history, tab_efficiency = st.tabs(["Submit a task", "History", "Time saved"])
 
 with tab_submit:
     st.subheader("Submit a coding task")
@@ -105,20 +114,21 @@ with tab_history:
             except httpx.HTTPError as exc:
                 st.error(f"Could not load task #{task['id']}: {exc}")
 
-with tab_cost:
-    st.subheader("Cost savings vs. an always-Opus baseline")
+with tab_efficiency:
+    st.subheader("Time saved vs. an always-Opus baseline")
+    st.caption(
+        "The routed tiers run on a local Ollama server with no metered cost, "
+        "so time — not dollars — is what this system is actually optimizing "
+        "now. The baseline is an estimate (app/models/timing.py), not a real "
+        "Opus call for every task."
+    )
     try:
-        summary = get_cost_summary()
+        summary = get_efficiency_summary()
     except httpx.HTTPError as exc:
-        st.error(f"Could not load cost summary: {exc}")
+        st.error(f"Could not load efficiency summary: {exc}")
     else:
         cols = st.columns(4)
         cols[0].metric("Tasks", summary["task_count"])
-        cols[1].metric("Total spend", f"${summary['total_cost_usd']:.6f}")
-        cols[2].metric("Baseline (always Opus)", f"${summary['baseline_cost_usd']:.6f}")
-        cols[3].metric("Savings", f"${summary['savings_usd']:.6f}")
-        if summary["task_count"] > 0 and summary["total_cost_usd"] == 0:
-            st.caption(
-                "Reading $0 because the routed tiers run on a local Ollama server — "
-                "expected while running locally, see PRD.md's success metric note."
-            )
+        cols[1].metric("Total time", format_ms(summary["total_time_ms"]))
+        cols[2].metric("Baseline (always Opus, est.)", format_ms(summary["baseline_time_ms"]))
+        cols[3].metric("Time saved", format_ms(summary["time_saved_ms"]))
