@@ -50,26 +50,26 @@ CREATE TABLE IF NOT EXISTS cost_ledger (
 
 
 def get_connection(db_path: Path | None = None) -> sqlite3.Connection:
-    """Open a connection to a SQLite file, creating its folder if this is
-    the first run. Defaults to the autopilot's real database; tests pass
-    a temp path instead so they never touch real data."""
+    """Open a connection to a SQLite file, creating its folder and its
+    tables (idempotently) if this is the first run. Defaults to the
+    autopilot's real database; tests pass a temp path instead so they
+    never touch real data — and never need to touch the real database's
+    schema either, since every connection is self-initializing."""
     path = db_path or DB_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.executescript(SCHEMA)
+    conn.commit()
     return conn
 
 
 def init_db(db_path: Path | None = None) -> None:
-    """Create the four tables if they don't already exist. Safe to call
-    on every startup."""
-    conn = get_connection(db_path)
-    try:
-        conn.executescript(SCHEMA)
-        conn.commit()
-    finally:
-        conn.close()
+    """Explicit convenience wrapper for CLI use — get_connection() already
+    creates the tables on every call, so nothing outside this module needs
+    to call init_db() to be safe."""
+    get_connection(db_path).close()
 
 
 if __name__ == "__main__":

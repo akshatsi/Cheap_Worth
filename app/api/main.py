@@ -12,8 +12,6 @@ data to trust the classifier's first guess (see architecture.md).
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
-
 from fastapi import Depends, FastAPI, HTTPException
 
 from app.api.dependencies import (
@@ -27,18 +25,14 @@ from app.orchestration.cascade import run_cascade
 from app.orchestration.state import ClassifyFn, ExecuteFn, ValidateFn
 from app.schemas.models import Phase, Task, TaskSubmission
 from app.storage import repository
-from app.storage.db import init_db
 
 CURRENT_PHASE = Phase.BOOTSTRAP
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    init_db()
-    yield
-
-
-app = FastAPI(title="LLM Cost Autopilot", lifespan=lifespan)
+# No startup hook needed: get_db_connection() (app.api.dependencies) opens
+# a connection through app.storage.db.get_connection(), which creates its
+# tables on every call. That also means tests overriding get_db_connection
+# to a temp path never touch the real database's schema, let alone its data.
+app = FastAPI(title="LLM Cost Autopilot")
 
 
 def _load_task_detail(conn, task_id: int) -> TaskDetail:

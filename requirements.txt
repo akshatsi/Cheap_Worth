@@ -1,6 +1,5 @@
 fastapi
 uvicorn
-anthropic
 groq
 langgraph
 streamlit

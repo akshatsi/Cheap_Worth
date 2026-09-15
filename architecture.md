@@ -5,11 +5,13 @@
 | Layer | Choice | Role |
 |---|---|---|
 | API | Python + FastAPI | Accepts tasks, returns results and status |
-| Routed models | Anthropic (Haiku, Sonnet, Opus) | The three tiers that actually do the coding work |
-| Classifier | Groq (a small, fast open-weight model) | Guesses simple vs. complex before any Anthropic call runs |
+| Routed models | Local Ollama server (three model sizes standing in for Haiku, Sonnet, Opus) | The three tiers that actually do the coding work, running on this machine — no key, no metered cost |
+| Classifier | Groq (a small, fast open-weight model) | Guesses simple vs. complex before any Ollama call runs |
 | Orchestration | LangGraph | The classify → execute → validate → escalate loop, as a graph |
 | Frontend | Streamlit | Submit tasks, view a task's tier trace, view running cost savings |
 | Storage | SQLite + JSON | SQLite for structured records; JSON columns for raw, shape-varying data such as model responses and test output |
+
+The routed tiers run locally now, not against Anthropic's API — see [architecture_essentials.md](architecture_essentials.md) for the model names and the env vars that override them. Cost and savings figures for the routed tiers read $0 as a result; that's expected while everything runs on this machine, not a bug. The classifier stays a real Groq call regardless.
 
 ## Two operating phases
 
@@ -22,7 +24,7 @@
 1. A client submits a task (spec + tests) through the FastAPI endpoint.
 2. LangGraph runs the orchestration graph:
    - **Classify** — in the routed phase, calls Groq, predicts simple/complex, and sets the starting tier. In the bootstrap phase, this step is skipped and the starting tier is always Haiku.
-   - **Execute** — calls the chosen Anthropic tier with the task spec, gets back code.
+   - **Execute** — calls the chosen tier's local Ollama model with the task spec, gets back code.
    - **Validate** — runs the code against the supplied tests in a local subprocess, under a timeout and resource limit, and returns pass/fail with detail.
    - **Decide** — pass: mark the task done. Fail, with a tier remaining above the current one: escalate to the next tier (Haiku → Sonnet → Opus) and loop back to Execute. Fail at Opus: mark the task failed.
 3. Every outcome — tier tried, pass/fail, cost, latency — is written to SQLite.
@@ -48,7 +50,7 @@
 |---|---|
 | `app/api` | FastAPI routes and request/response wiring |
 | `app/orchestration` | The LangGraph graph and its node functions |
-| `app/models` | Anthropic and Groq client wrappers, plus the per-tier pricing table |
+| `app/models` | Ollama and Groq client wrappers, plus the per-tier pricing table |
 | `app/sandbox` | The subprocess runner that executes and times out candidate code |
 | `app/storage` | SQLite access and repository functions for each table above |
 | `app/schemas` | Pydantic models shared across the API, orchestration, and storage layers |

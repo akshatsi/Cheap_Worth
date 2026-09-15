@@ -14,7 +14,7 @@ The author's own coding-task workflow. A personal tool, not a product for other 
 
 ## Scope for v1
 
-One task type: coding. A task arrives as a self-contained spec, such as a function or class description, with test cases attached. No existing codebase, no back-and-forth session, no provider besides Anthropic. Groq handles the classification step; Anthropic supplies the three model tiers that do the actual work.
+One task type: coding. A task arrives as a self-contained spec, such as a function or class description, with test cases attached. No existing codebase, no back-and-forth session. Groq handles the classification step; the three model tiers that do the actual work run on a local Ollama server rather than a paid API, since this runs on the author's own machine.
 
 ## What "done right" means
 
@@ -26,7 +26,7 @@ Not the lowest cost on any single task, but the lowest total spend across every 
 
 ## Non-goals for v1
 
-- No routing across providers other than Anthropic
+- No routing across providers for the tiers doing the work — local Ollama models only, for now
 - No reading or editing an existing codebase
 - No multi-turn, tool-using sessions
 - No container isolation for running code
@@ -38,4 +38,4 @@ The classifier starts with no data on which tasks need which tier. Early tasks s
 
 ## Success metric
 
-Total dollars spent across a batch of tasks, measured against a baseline of running every task on the top model tier.
+Total dollars spent across a batch of tasks, measured against a baseline of running every task on the top model tier. While the routed tiers run locally on Ollama, this reads as $0 either way — a real number, not a broken one, but not a meaningful savings signal until a paid tier is back in the loop. The metric still applies to the Groq classifier call, and to whatever provider the routed tiers use if that changes later.
