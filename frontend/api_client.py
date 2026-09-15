@@ -15,9 +15,14 @@ import httpx
 
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000")
 
-# Local inference can be slow; generous timeout for the POST that runs
-# the whole cascade synchronously.
-REQUEST_TIMEOUT_SECONDS = 180
+# POST /tasks can make up to three sequential Ollama calls if a task
+# escalates all the way to Opus (see app/orchestration/cascade.py), each
+# with its own REQUEST_TIMEOUT_SECONDS=120 in app/models/execute.py — a
+# worst case of 360s before the backend itself would time out. This has
+# to comfortably exceed that, not just "feel generous": a value under it
+# would cut the frontend off on a legitimately-still-working escalation,
+# not a stuck one.
+REQUEST_TIMEOUT_SECONDS = 420
 
 
 def _request(
