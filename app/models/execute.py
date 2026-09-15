@@ -41,6 +41,22 @@ _PROMPT_TEMPLATE = (
 REQUEST_TIMEOUT_SECONDS = 120
 
 
+def _strip_markdown_fences(text: str) -> str:
+    """Some local models wrap code in a markdown fence despite being told
+    not to — left as-is, that's a guaranteed syntax error in the sandbox
+    (a false negative on genuinely correct code, not a real failure).
+    Strip a leading ``` / ```python line and a trailing ``` line if present."""
+    stripped = text.strip()
+    if not stripped.startswith("```"):
+        return stripped
+
+    lines = stripped.splitlines()
+    lines = lines[1:]  # drop the opening fence (``` or ```python, etc.)
+    if lines and lines[-1].strip() == "```":
+        lines = lines[:-1]
+    return "\n".join(lines).strip()
+
+
 def execute(tier: Tier, spec: str) -> ExecuteResult:
     """Call the given tier's local Ollama model with a coding task spec."""
     start = time.monotonic()
@@ -57,7 +73,7 @@ def execute(tier: Tier, spec: str) -> ExecuteResult:
     latency_ms = (time.monotonic() - start) * 1000
 
     data = response.json()
-    code_output = data["message"]["content"]
+    code_output = _strip_markdown_fences(data["message"]["content"])
     input_tokens = data.get("prompt_eval_count", 0)
     output_tokens = data.get("eval_count", 0)
     cost_usd = estimate_cost_usd(tier, input_tokens=input_tokens, output_tokens=output_tokens)

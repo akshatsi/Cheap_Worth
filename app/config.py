@@ -19,8 +19,16 @@ GROQ_CLASSIFIER_MODEL = os.environ.get("GROQ_CLASSIFIER_MODEL", "llama-3.1-8b-in
 # machine. Defaults below match what's already pulled locally; override any
 # of them, or `ollama pull` a bigger model for the Opus tier, which isn't
 # pulled by default.
+#
+# Haiku deliberately isn't a reasoning model: qwen3:4b (the original
+# default) has "thinking" mode on by default and generated 1,900+ tokens of
+# hidden chain-of-thought for a task as simple as is_prime — 66s for that
+# one call alone, and enough latency variance to blow past a 120s timeout
+# on other tasks. llama3.2:1b has no thinking mode, so its latency actually
+# tracks task size instead of swinging wildly task to task — what the
+# cheapest, fastest tier needs to be.
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_HAIKU_MODEL = os.environ.get("OLLAMA_HAIKU_MODEL", "qwen3:4b")
+OLLAMA_HAIKU_MODEL = os.environ.get("OLLAMA_HAIKU_MODEL", "llama3.2:1b")
 OLLAMA_SONNET_MODEL = os.environ.get("OLLAMA_SONNET_MODEL", "qwen2.5:7b")
 OLLAMA_OPUS_MODEL = os.environ.get("OLLAMA_OPUS_MODEL", "qwen2.5:14b")
 

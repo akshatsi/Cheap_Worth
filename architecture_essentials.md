@@ -12,7 +12,8 @@ No Anthropic key needed. The routed tiers run on a local Ollama server, so all t
 
 ## Models
 
-- Ollama tiers, in escalation order, with their defaults: `qwen3:4b` (Haiku) → `qwen2.5:7b` (Sonnet) → `qwen2.5:14b` (Opus). All are config values, not architectural decisions — override via the env vars above, or `ollama pull` a different model for any tier. The Opus default isn't pulled automatically; run `ollama pull qwen2.5:14b` before that tier is reachable.
+- Ollama tiers, in escalation order, with their defaults: `llama3.2:1b` (Haiku) → `qwen2.5:7b` (Sonnet) → `qwen2.5:14b` (Opus). All are config values, not architectural decisions — override via the env vars above, or `ollama pull` a different model for any tier. The Opus default isn't pulled automatically; run `ollama pull qwen2.5:14b` before that tier is reachable.
+- Haiku deliberately isn't a reasoning/"thinking" model. `qwen3:4b` was tried first and dropped: its default thinking mode generated 1,900+ output tokens for a task as simple as `is_prime`, with latency swinging from ~5s to 60s+ task to task — the opposite of what the fastest tier needs. `llama3.2:1b` doesn't have a thinking mode, so its latency actually tracks task size.
 - Groq classifier: a small, fast model such as an 8B Llama on Groq — pick one at build time, it is a config value, not an architectural decision.
 
 ## Core packages
