@@ -1,0 +1,6 @@
+{
+  "id": "longest_common_subsequence",
+  "difficulty": "hard",
+  "spec": "Write a function `longest_common_subsequence(a, b)` that returns the length of the longest subsequence common to strings a and b. A subsequence need not be contiguous, but must preserve relative order.",
+  "tests": "def test_basic():\n    assert longest_common_subsequence('abcde', 'ace') == 3\n\n\ndef test_no_common():\n    assert longest_common_subsequence('abc', 'xyz') == 0\n\n\ndef test_identical():\n    assert longest_common_subsequence('abc', 'abc') == 3\n\n\ndef test_empty():\n    assert longest_common_subsequence('', 'abc') == 0\n"
+}

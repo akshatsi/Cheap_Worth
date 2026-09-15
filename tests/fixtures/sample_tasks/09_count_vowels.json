@@ -1,0 +1,6 @@
+{
+  "id": "count_vowels",
+  "difficulty": "easy",
+  "spec": "Write a function `count_vowels(s)` that returns the number of vowels (a, e, i, o, u), case-insensitive, in the string.",
+  "tests": "def test_basic():\n    assert count_vowels('hello') == 2\n\n\ndef test_uppercase():\n    assert count_vowels('HELLO') == 2\n\n\ndef test_no_vowels():\n    assert count_vowels('xyz') == 0\n\n\ndef test_empty():\n    assert count_vowels('') == 0\n"
+}

@@ -1,0 +1,6 @@
+{
+  "id": "word_frequency",
+  "difficulty": "medium",
+  "spec": "Write a function `word_frequency(text)` that returns a dict mapping each word to how many times it appears in text. Split on whitespace, treat words case-insensitively (lowercase them), and strip the punctuation marks . , ! ? from the start and end of each word before counting.",
+  "tests": "def test_basic():\n    assert word_frequency('the cat sat on the mat') == {'the': 2, 'cat': 1, 'sat': 1, 'on': 1, 'mat': 1}\n\n\ndef test_case_insensitive():\n    assert word_frequency('Cat cat CAT') == {'cat': 3}\n\n\ndef test_strips_punctuation():\n    assert word_frequency('Hello, world! Hello.') == {'hello': 2, 'world': 1}\n\n\ndef test_empty():\n    assert word_frequency('') == {}\n"
+}

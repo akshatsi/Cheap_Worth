@@ -1,0 +1,6 @@
+{
+  "id": "group_anagrams",
+  "difficulty": "hard",
+  "spec": "Write a function `group_anagrams(words)` that groups a list of strings into lists of anagrams of each other. Return a list of these groups; the order of groups and the order of words within each group do not matter, but every input word must appear in exactly one group.",
+  "tests": "def test_groups_correctly():\n    result = group_anagrams(['eat', 'tea', 'tan', 'ate', 'nat', 'bat'])\n    groups = sorted(sorted(g) for g in result)\n    expected = sorted([sorted(['eat', 'tea', 'ate']), sorted(['tan', 'nat']), sorted(['bat'])])\n    assert groups == expected\n\n\ndef test_empty_input():\n    assert group_anagrams([]) == []\n\n\ndef test_no_anagrams():\n    result = group_anagrams(['abc', 'def'])\n    groups = sorted(sorted(g) for g in result)\n    assert groups == [['abc'], ['def']]\n"
+}

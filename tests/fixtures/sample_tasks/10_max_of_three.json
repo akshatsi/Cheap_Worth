@@ -1,0 +1,6 @@
+{
+  "id": "max_of_three",
+  "difficulty": "easy",
+  "spec": "Write a function `max_of_three(a, b, c)` that returns the largest of three numbers.",
+  "tests": "def test_first_largest():\n    assert max_of_three(5, 2, 3) == 5\n\n\ndef test_last_largest():\n    assert max_of_three(1, 2, 9) == 9\n\n\ndef test_all_equal():\n    assert max_of_three(4, 4, 4) == 4\n\n\ndef test_negative_numbers():\n    assert max_of_three(-1, -5, -3) == -1\n"
+}

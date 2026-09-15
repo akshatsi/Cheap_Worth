@@ -1,0 +1,6 @@
+{
+  "id": "flatten_list",
+  "difficulty": "medium",
+  "spec": "Write a function `flatten_list(nested)` that takes a list which may contain other lists nested to any depth, and returns a single flat list of all the non-list elements, in order.",
+  "tests": "def test_one_level():\n    assert flatten_list([1, [2, 3], 4]) == [1, 2, 3, 4]\n\n\ndef test_deeply_nested():\n    assert flatten_list([1, [2, [3, [4, 5]], 6]]) == [1, 2, 3, 4, 5, 6]\n\n\ndef test_already_flat():\n    assert flatten_list([1, 2, 3]) == [1, 2, 3]\n\n\ndef test_empty():\n    assert flatten_list([]) == []\n"
+}

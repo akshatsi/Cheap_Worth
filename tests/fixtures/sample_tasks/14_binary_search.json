@@ -1,0 +1,6 @@
+{
+  "id": "binary_search",
+  "difficulty": "medium",
+  "spec": "Write a function `binary_search(arr, target)` that returns the index of target in the sorted list arr, or -1 if it isn't present. Must run in O(log n) time.",
+  "tests": "def test_found_middle():\n    assert binary_search([1, 3, 5, 7, 9], 5) == 2\n\n\ndef test_found_first():\n    assert binary_search([1, 3, 5, 7, 9], 1) == 0\n\n\ndef test_found_last():\n    assert binary_search([1, 3, 5, 7, 9], 9) == 4\n\n\ndef test_not_found():\n    assert binary_search([1, 3, 5, 7, 9], 4) == -1\n\n\ndef test_empty():\n    assert binary_search([], 1) == -1\n"
+}

@@ -1,0 +1,6 @@
+{
+  "id": "is_prime",
+  "difficulty": "easy",
+  "spec": "Write a function `is_prime(n)` that returns True if the positive integer n is a prime number, and False otherwise. 0 and 1 are not prime.",
+  "tests": "def test_small_primes():\n    assert is_prime(2) is True\n    assert is_prime(3) is True\n    assert is_prime(7) is True\n\n\ndef test_non_primes():\n    assert is_prime(1) is False\n    assert is_prime(4) is False\n    assert is_prime(9) is False\n\n\ndef test_zero_is_not_prime():\n    assert is_prime(0) is False\n\n\ndef test_larger_prime():\n    assert is_prime(97) is True\n"
+}
